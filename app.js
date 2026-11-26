@@ -8,6 +8,7 @@ const state = {
   companies: [],
   categories: [],
   histories: [],
+  admins: [],
   stats: { companies: 0, categories: 0, histories: 0, qrImages: 0 },
   admin: null,
   query: '',
@@ -425,7 +426,11 @@ function selectedImportRows() {
 
 async function loadData() {
   const [bootstrap, auth] = await Promise.all([api('/api/bootstrap'), api('/api/auth/me')]);
-  Object.assign(state, bootstrap, { admin: auth.admin });
+  let admins = [];
+  if (auth.admin) {
+    try { admins = (await api('/api/admins')).admins || []; } catch { admins = [{ username: auth.admin.username, isInitial: auth.admin.isInitial }]; }
+  }
+  Object.assign(state, bootstrap, { admin: auth.admin, admins });
   renderAll();
   if (state.admin) {
     renderAdminCompanies();
@@ -794,24 +799,24 @@ function followupStageOptions(selected) {
 function followupEditorSection(company) {
   return `
     <section class="detail-section followup-section">
-      <div class="followup-title"><h3>跟进过程</h3><span>每次确认都会保留一条历史记录</span></div>
+      <div class="followup-title"><h3>跟进动态</h3><span>每次确认都会保留一条动态记录</span></div>
       <form id="followupForm" class="followup-form" data-company-id="${escapeHtml(company.id)}">
         <div class="followup-form-grid">
           <label class="field"><span>当前阶段 *</span><select name="status" required>${followupStageOptions(company.followUpStatus || '未接触')}</select></label>
-          <label class="field"><span>负责人</span><input name="owner" type="text" maxlength="100" value="${escapeHtml(company.contact || '')}" placeholder="本次跟进负责人"></label>
+          <label class="field"><span>负责人 *</span><select name="owner" required>${followupAdminOptions()}</select></label>
           <label class="field field-span-2"><span>当前进展 *</span><textarea name="currentProgress" rows="3" maxlength="3000" required placeholder="例如：已完成首次电话沟通，介绍了低空农业解决方案"></textarea></label>
           <label class="field field-span-2"><span>下一步进展</span><textarea name="nextStep" rows="2" maxlength="3000" placeholder="例如：下周发送方案，并约客户现场拜访"></textarea></label>
         </div>
         <div class="followup-form-actions"><button class="button button-ink button-small" type="submit">确认并保存跟进</button></div>
       </form>
-      <div id="followupHistory" class="followup-history"><p class="subtle-text">正在载入跟进历史…</p></div>
+      <div id="followupHistory" class="followup-history"><p class="subtle-text">正在载入跟进动态…</p></div>
     </section>
   `;
 }
 
 function renderFollowupHistory(followUps) {
   if (!followUps.length) {
-    return '<div class="followup-empty">还没有跟进记录。保存第一条进展后，历史会显示在这里。</div>';
+    return '<div class="followup-empty">还没有跟进动态。保存第一条进展后，动态会显示在这里。</div>';
   }
   return followUps.map((item, index) => `
     <article class="followup-entry">
@@ -822,7 +827,7 @@ function renderFollowupHistory(followUps) {
       <div class="followup-entry-meta"><span>负责人：${escapeHtml(item.owner || '未填写')}</span><span>提交人：${escapeHtml(item.createdBy || '—')}</span></div>
       <div class="followup-entry-copy"><span>当前进展</span><p>${escapeHtml(item.currentProgress || '—')}</p></div>
       ${item.nextStep ? `<div class="followup-entry-copy next"><span>下一步进展</span><p>${escapeHtml(item.nextStep)}</p></div>` : ''}
-      <button class="followup-delete" type="button" data-delete-followup="${escapeHtml(item.id)}" data-company-id="${escapeHtml(item.companyId)}"><svg><use href="#icon-trash"></use></svg>删除记录</button>
+      <button class="followup-delete" type="button" data-delete-followup="${escapeHtml(item.id)}" data-company-id="${escapeHtml(item.companyId)}"><svg><use href="#icon-trash"></use></svg>删除动态</button>
     </article>
   `).join('');
 }
@@ -830,7 +835,7 @@ function renderFollowupHistory(followUps) {
 async function loadFollowUps(companyId) {
   const container = $('followupHistory');
   if (!container) return;
-  container.innerHTML = '<p class="subtle-text">正在载入跟进历史…</p>';
+  container.innerHTML = '<p class="subtle-text">正在载入跟进动态…</p>';
   try {
     const data = await api(`/api/companies/${encodeURIComponent(companyId)}/followups`);
     const current = $('followupHistory');
@@ -853,7 +858,7 @@ document.getElementById('detailContent').addEventListener('submit', async (event
     await api(`/api/companies/${encodeURIComponent(companyId)}/followups`, { method: 'POST', body: JSON.stringify(values) });
     await loadData();
     openCompanyDetail(companyId);
-    showToast('跟进记录已保存。');
+    showToast('跟进动态已保存。');
   } catch (error) {
     showToast(error.message, 'error');
   } finally {
@@ -865,11 +870,11 @@ document.getElementById('detailContent').addEventListener('click', (event) => {
   const button = event.target.closest('[data-delete-followup]');
   if (!button) return;
   const companyId = button.dataset.companyId;
-  confirmAction('删除跟进记录', '确定删除这条跟进历史吗？删除后当前阶段会自动回退到最近一条剩余记录。', async () => {
+  confirmAction('删除跟进动态', '确定删除这条跟进动态吗？删除后当前阶段会自动回退到最近一条剩余记录。', async () => {
     await api(`/api/followups/${encodeURIComponent(button.dataset.deleteFollowup)}`, { method: 'DELETE' });
     await loadData();
     openCompanyDetail(companyId);
-    showToast('跟进记录已删除。');
+    showToast('跟进动态已删除。');
   }, '确认删除');
 });
 
@@ -887,4 +892,11 @@ function renderFollowupTabs() {
       <i></i>${item.name}<span>${item.count}</span>
     </button>
   `).join('');
+}
+
+function followupAdminOptions() {
+  const admins = state.admins.length ? state.admins : (state.admin ? [{ username: state.admin.username }] : []);
+  const selected = state.admin?.username || admins[0]?.username || '';
+  if (!admins.length) return '<option value="">暂无管理员</option>';
+  return admins.map((admin) => `<option value="${escapeHtml(admin.username)}" ${admin.username === selected ? 'selected' : ''}>${escapeHtml(admin.username)}</option>`).join('');
 }
