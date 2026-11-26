@@ -536,3 +536,7 @@ svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-widt
   .followup-filter-row { display: block; }
   .followup-filter-label { flex: none; margin-bottom: 9px; padding-top: 0; }
 }
+
+.import-pending-note { display: flex; justify-content: space-between; gap: 20px; padding: 13px 18px; background: #f4ead0; color: #785f2f; font-size: 11px; border-bottom: 1px solid rgba(120, 95, 47, .15); }
+.import-pending-note strong { font-size: 11px; }
+@media (max-width: 720px) { .import-pending-note { display: block; } .import-pending-note span { display: block; margin-top: 4px; } }
