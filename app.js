@@ -699,8 +699,8 @@ function bindImport() {
       });
       $('importForm').reset();
       updateFileLabel();
-      closeModal('adminModal');
       await loadData();
+      closeModal('adminModal');
       document.getElementById('directory').scrollIntoView({ behavior: 'smooth', block: 'start' });
       showToast('网站已更新：新增 ' + result.merge.inserted + ' 家，更新 ' + result.merge.updated + ' 家，跳过 ' + result.merge.skipped + ' 家。');
     } catch (error) {
