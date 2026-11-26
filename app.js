@@ -401,10 +401,10 @@ function renderImportPreview(preview) {
   const warnings = (preview.warnings || []).map((warning) => `<p class="import-warning">${escapeHtml(warning)}</p>`).join('');
   $('importPreview').hidden = false;
   $('importPreview').innerHTML = `
-    <div class="import-preview-head"><div><h3>导入预览 · ${escapeHtml(preview.originalName)}</h3><p>识别工作表 ${escapeHtml(preview.sheetName)}，共 ${preview.summary.rows} 行；同名 ${preview.summary.duplicates} 家，将更新现有档案；二维码截图 ${preview.summary.qrImages} 张。</p></div><span class="subtle-text">${escapeHtml(formatDate(new Date(), true))}</span></div>
+    <div class="import-preview-head"><div><h3>导入预览 · ${escapeHtml(preview.originalName)}</h3><p>识别工作表 ${escapeHtml(preview.sheetName)}，共 ${preview.summary.rows} 行；网站已有同名 ${preview.summary.duplicates} 家，将自动更新；文件内重复 ${preview.summary.duplicatesWithinFile || 0} 行，默认跳过；二维码截图 ${preview.summary.qrImages} 张。</p></div><span class="subtle-text">${escapeHtml(formatDate(new Date(), true))}</span></div>
     ${warnings}
     <div class="import-table-wrap"><table class="import-table"><thead><tr><th><input id="previewSelectAll" type="checkbox" checked aria-label="全选公司"></th><th>公司名称</th><th>状态</th><th>主分类（可调整）</th><th>联系人</th><th>二维码</th></tr></thead><tbody>
-      ${preview.companies.map((row) => `<tr data-preview-row="${row.sourceRow}"><td><input class="preview-include" type="checkbox" data-source-row="${row.sourceRow}" checked aria-label="选择 ${escapeHtml(row.name)}"></td><td class="preview-name">${escapeHtml(row.name)}<small>${escapeHtml(truncate(row.positioning, 80) || '未填写企业定位')}</small></td><td>${row.duplicate ? '<span class="dup-badge">更新</span>' : '<span class="new-badge">新增</span>'}</td><td><select class="preview-category" data-source-row="${row.sourceRow}">${categoryOptions(row.category)}</select></td><td>${escapeHtml(row.contact || '—')}</td><td>${row.qrImages.length ? `${row.qrImages.length} 张` : '—'}</td></tr>`).join('')}
+      ${preview.companies.map((row) => `<tr data-preview-row="${row.sourceRow}"><td><input class="preview-include" type="checkbox" data-source-row="${row.sourceRow}" ${row.include === false ? '' : 'checked'} aria-label="选择 ${escapeHtml(row.name)}"></td><td class="preview-name">${escapeHtml(row.name)}<small>${escapeHtml(truncate(row.positioning, 80) || '未填写企业定位')}</small></td><td>${row.duplicateWithinFile ? '<span class="dup-badge">文件内重复</span>' : row.duplicate ? '<span class="dup-badge">更新</span>' : '<span class="new-badge">新增</span>'}</td><td><select class="preview-category" data-source-row="${row.sourceRow}">${categoryOptions(row.category)}</select></td><td>${escapeHtml(row.contact || '—')}</td><td>${row.qrImages.length ? `${row.qrImages.length} 张` : '—'}</td></tr>`).join('')}
     </tbody></table></div>
     <div class="import-preview-actions"><button id="cancelImportBtn" class="button button-ghost" type="button">取消本次导入</button><button id="commitImportBtn" class="button button-ink" type="button">确认融合入库</button></div>
   `;
@@ -669,15 +669,27 @@ function bindImport() {
     event.preventDefault();
     const file = fileInput.files?.[0];
     if (!file) return showToast('请先选择企业表格。', 'error');
+    if (file.size > 100 * 1024 * 1024) return showToast('表格不能超过 100MB。', 'error');
     const button = event.submitter;
-    setButtonLoading(button, true, '正在解析…');
+    setButtonLoading(button, true, '正在上传并解析…');
     resetImportPreview();
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const preview = await api('/api/import/preview', { method: 'POST', body: formData });
+      const signed = await api('/api/import/sign', {
+        method: 'POST',
+        body: JSON.stringify({ originalName: file.name, size: file.size, mimeType: file.type }),
+      });
+      const upload = await fetch(signed.signedUrl, {
+        method: 'PUT',
+        headers: { 'content-type': file.type || 'application/octet-stream', 'x-upsert': 'false' },
+        body: file,
+      });
+      if (!upload.ok) throw new Error('表格上传失败（' + upload.status + '）。');
+      const preview = await api('/api/import/preview', {
+        method: 'POST',
+        body: JSON.stringify({ bucket: signed.bucket, path: signed.path, originalName: file.name, size: file.size, mimeType: file.type }),
+      });
       renderImportPreview(preview);
-      showToast(`已识别 ${preview.summary.rows} 行企业数据。`);
+      showToast('已识别 ' + preview.summary.rows + ' 行企业数据。');
     } catch (error) { showToast(error.message, 'error'); }
     finally { setButtonLoading(button, false); }
   });
