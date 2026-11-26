@@ -673,8 +673,9 @@ function bindImport() {
     if (!file) return showToast('请先选择企业表格。', 'error');
     if (file.size > 100 * 1024 * 1024) return showToast('表格不能超过 100MB。', 'error');
     const button = event.submitter;
-    setButtonLoading(button, true, '正在上传并解析…');
+    setButtonLoading(button, true, '正在自动识别并更新网站…');
     resetImportPreview();
+    let preview = null;
     try {
       const signed = await api('/api/import/sign', {
         method: 'POST',
@@ -686,14 +687,26 @@ function bindImport() {
         body: file,
       });
       if (!upload.ok) throw new Error('表格上传失败（' + upload.status + '）。');
-      const preview = await api('/api/import/preview', {
+      preview = await api('/api/import/preview', {
         method: 'POST',
         body: JSON.stringify({ bucket: signed.bucket, path: signed.path, originalName: file.name, size: file.size, mimeType: file.type }),
       });
-      renderImportPreview(preview);
-      $('importPreview').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      showToast('已生成导入预览，网站尚未更新；请点击“确认导入并更新网站”。');
-    } catch (error) { showToast(error.message, 'error'); }
+      const rows = preview.companies.map((row) => ({ sourceRow: row.sourceRow, include: row.include !== false, category: row.category }));
+      if (!rows.some((row) => row.include)) throw new Error('表格中没有可导入的新公司。');
+      const result = await api('/api/import/commit', {
+        method: 'POST',
+        body: JSON.stringify({ token: preview.token, title: $('importTitle').value, companies: rows }),
+      });
+      $('importForm').reset();
+      updateFileLabel();
+      closeModal('adminModal');
+      await loadData();
+      document.getElementById('directory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      showToast('网站已更新：新增 ' + result.merge.inserted + ' 家，更新 ' + result.merge.updated + ' 家，跳过 ' + result.merge.skipped + ' 家。');
+    } catch (error) {
+      if (preview) { renderImportPreview(preview); $('importPreview').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      showToast(error.message, 'error');
+    }
     finally { setButtonLoading(button, false); }
   });
 

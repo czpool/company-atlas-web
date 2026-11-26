@@ -206,13 +206,13 @@
         </section>
         <section id="adminImportPanel" class="admin-panel" hidden>
           <div class="import-intro">
-            <div><span class="section-kicker">SMART MERGE</span><h3>上传新表格并预览融合结果</h3><p>无需下载模板。直接上传现有公司信息表，系统自动识别公司名称、联系方式、定位、网址和分类，并自动提取二维码图片。同名公司自动更新，文件内重复公司默认跳过，不会产生重复记录。</p></div>
+            <div><span class="section-kicker">SMART MERGE</span><h3>上传公司表格并自动更新网站</h3><p>无需下载模板。直接上传现有公司信息表，系统自动识别公司名称、联系方式、定位、网址和分类，自动提取二维码图片。新公司会插入网站，同名公司会更新，文件内重复公司默认跳过。</p></div>
             <div class="import-badges"><span>XLSX / CSV</span><span>自动分类</span><span>同名去重</span><span>图片提取</span></div>
           </div>
           <form id="importForm" class="import-drop" enctype="multipart/form-data">
             <input id="importFileInput" name="file" type="file" accept=".xlsx,.csv" required hidden>
             <label for="importFileInput" class="drop-target"><span class="drop-icon"><svg><use href="#icon-upload"></use></svg></span><strong id="importFileLabel">选择或拖入企业表格</strong><small>支持 .xlsx / .csv，单个文件不超过 100MB</small></label>
-            <div class="import-title-row"><label class="field"><span>历史表格标题（可选）</span><input id="importTitle" type="text" maxlength="120" placeholder="例如：11 月企业补充表"></label><button class="button button-ink" type="submit">生成导入预览</button></div>
+            <div class="import-title-row"><label class="field"><span>历史表格标题（可选）</span><input id="importTitle" type="text" maxlength="120" placeholder="例如：11 月企业补充表"></label><button class="button button-ink" type="submit">自动识别并更新网站</button></div>
           </form>
           <div id="importPreview" class="import-preview" hidden></div>
         </section>
