@@ -22,6 +22,7 @@ const state = {
   adminQuery: '',
   importPreview: null,
   confirmAction: null,
+  pendingAdminTab: new URLSearchParams(window.location.search).get('admin') === 'import' ? 'import' : '',
 };
 
 const $ = (id) => document.getElementById(id);
@@ -469,6 +470,11 @@ function bindEvents() {
       form.reset();
       closeModal('loginModal');
       await loadData();
+      if (state.pendingAdminTab) {
+        const tab = state.pendingAdminTab;
+        state.pendingAdminTab = '';
+        openAdmin(tab);
+      }
       showToast(`欢迎回来，${data.admin.username}。`);
     } catch (error) {
       errorBox.textContent = error.message;
@@ -783,6 +789,16 @@ async function init() {
   bindGlobalUi();
   try {
     await loadData();
+    if (state.pendingAdminTab) {
+      if (state.admin) {
+        const tab = state.pendingAdminTab;
+        state.pendingAdminTab = '';
+        openAdmin(tab);
+      } else {
+        $('loginError').hidden = true;
+        openModal('loginModal');
+      }
+    }
   } catch (error) {
     document.getElementById('companyGrid').innerHTML = `<div class="empty-state"><h3>数据加载失败</h3><p>${escapeHtml(error.message)}</p><button class="button button-ink" type="button" id="reloadDataBtn">重新加载</button></div>`;
     document.getElementById('reloadDataBtn')?.addEventListener('click', () => location.reload());
