@@ -550,3 +550,15 @@ svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-widt
 .import-pending-note { display: flex; justify-content: space-between; gap: 20px; padding: 13px 18px; background: #f4ead0; color: #785f2f; font-size: 11px; border-bottom: 1px solid rgba(120, 95, 47, .15); }
 .import-pending-note strong { font-size: 11px; }
 @media (max-width: 720px) { .import-pending-note { display: block; } .import-pending-note span { display: block; margin-top: 4px; } }
+
+/* Prominent company contact strip */
+.company-contact { display: grid; grid-template-columns: .8fr 1.35fr .8fr; gap: 1px; margin: 0 0 16px; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--line-soft); }
+.contact-cell { min-width: 0; padding: 10px 12px; background: rgba(255, 253, 248, .72); display: flex; flex-direction: column; gap: 3px; }
+.contact-cell span { color: var(--muted); font-size: 8px; letter-spacing: .08em; }
+.contact-cell strong { color: var(--ink); font-size: 12px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+.contact-cell.phone-cell { background: var(--card-soft); }
+.contact-cell.phone-cell strong { color: var(--card-ink); font-size: 13px; }
+@media (max-width: 720px) {
+  .company-contact { grid-template-columns: 1fr 1fr; }
+  .contact-cell.phone-cell { grid-column: span 2; }
+}

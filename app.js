@@ -250,10 +250,10 @@ function companyCard(company, index) {
     <article class="company-card category-${escapeHtml(color)}" data-company-id="${escapeHtml(company.id)}" tabindex="0" role="button" aria-label="查看 ${escapeHtml(company.name)}">
       <div class="company-card-top"><span class="company-index">NO. ${String(index + 1).padStart(2, '0')}</span><div class="card-pills"><span class="category-pill">${escapeHtml(company.category)}</span>${followupBadge(company.followUpStatus)}</div></div>
       <h3><span>${escapeHtml(company.name)}</span></h3>
-      <div class="company-meta">
-        <span><i></i>${escapeHtml(company.contact || '联系人待补充')}</span>
-        <span><i></i>${escapeHtml(company.region || shortPhone(company.phone))}</span>
-        <span><i></i>${escapeHtml(shortPhone(company.phone))}</span>
+      <div class="company-contact">
+        <div class="contact-cell"><span>联系人</span><strong>${escapeHtml(company.contact || '待补充')}</strong></div>
+        <div class="contact-cell phone-cell"><span>联系电话</span><strong>${escapeHtml(shortPhone(company.phone))}</strong></div>
+        <div class="contact-cell"><span>所在地区</span><strong>${escapeHtml(company.region || '待补充')}</strong></div>
       </div>
       <p class="company-position">${escapeHtml(truncate(company.positioning, 220) || '企业定位待补充。')}</p>
       <div class="company-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
