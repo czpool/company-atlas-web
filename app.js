@@ -234,7 +234,7 @@ function getVisibleCompanies() {
     if (state.category !== '全部' && company.category !== state.category) return false;
     if (state.followupFilter !== '全部' && (company.followUpStatus || '未接触') !== state.followupFilter) return false;
     if (!query) return true;
-    const haystack = searchKey([company.name, company.contact, company.phone, company.positioning, company.notes, company.website, company.category, ...(company.relatedTags || [])].join(' '));
+    const haystack = searchKey([company.name, company.contact, company.phone, company.positioning, company.notes, company.website, company.category, company.classificationBasis, ...(company.relatedCategories || []), ...(company.relatedTags || [])].join(' '));
     return haystack.includes(query);
   });
   if (state.sort === 'name') rows = [...rows].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
@@ -245,7 +245,7 @@ function getVisibleCompanies() {
 
 function companyCard(company, index) {
   const color = categoryColor(company.category);
-  const tags = (company.relatedTags || []).slice(0, 3);
+  const tags = [...(company.relatedCategories || []).map((category) => '关联：' + category), ...(company.relatedTags || [])].slice(0, 4);
   return `
     <article class="company-card category-${escapeHtml(color)}" data-company-id="${escapeHtml(company.id)}" tabindex="0" role="button" aria-label="查看 ${escapeHtml(company.name)}">
       <div class="company-card-top"><span class="company-index">NO. ${String(index + 1).padStart(2, '0')}</span><div class="card-pills"><span class="category-pill">${escapeHtml(company.category)}</span>${followupBadge(company.followUpStatus)}</div></div>
@@ -330,9 +330,11 @@ function openCompanyDetail(id) {
       <div>
         <section class="detail-section"><h3>企业定位</h3><p>${escapeHtml(company.positioning || '暂未填写企业定位。')}</p></section>
         ${company.notes ? `<section class="detail-section"><h3>补充备注</h3><p>${escapeHtml(company.notes)}</p></section>` : ''}
-        ${company.relatedTags?.length ? `<section class="detail-section"><h3>关联方向</h3><div class="detail-tags">${company.relatedTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div></section>` : ''}
+        ${company.relatedCategories?.length ? `<section class="detail-section"><h3>关联分类</h3><div class="detail-tags">${company.relatedCategories.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div></section>` : ''}
+        ${company.classificationBasis ? `<section class="detail-section"><h3>分类依据</h3><p>${escapeHtml(company.classificationBasis)}</p></section>` : ''}
+        ${company.relatedTags?.length ? `<section class="detail-section"><h3>关联方向标签</h3><div class="detail-tags">${company.relatedTags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div></section>` : ''}
         ${qrImages.length ? `<section class="detail-section"><h3>二维码截图</h3><div class="detail-qr-grid">${qrImages.map((url, index) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" aria-label="打开二维码截图 ${index + 1}"><img src="${escapeHtml(url)}" alt="${escapeHtml(company.name)} 二维码截图 ${index + 1}" loading="lazy"></a>`).join('')}</div></section>` : ''}
-        ${state.admin ? followupEditorSection(company) : ''}
+        ${state.admin ? followupEditorSection(company) : publicFollowupSection(company)}
       </div>
       <aside>
         <div class="detail-facts">
@@ -376,7 +378,7 @@ function openCompanyEditor(company = null) {
   $('companyFormError').hidden = true;
   form.elements.id.value = company?.id || '';
   form.elements.name.value = company?.name || '';
-  form.elements.category.value = company?.category || '农业农村';
+  form.elements.category.value = company?.category || '农林植保';
   form.elements.contact.value = company?.contact || '';
   form.elements.phone.value = company?.phone || '';
   form.elements.region.value = company?.region || '';
@@ -384,7 +386,9 @@ function openCompanyEditor(company = null) {
   form.elements.website.value = company?.website || '';
   form.elements.positioning.value = company?.positioning || '';
   form.elements.notes.value = company?.notes || '';
+  form.elements.relatedCategories.value = (company?.relatedCategories || []).join('，');
   form.elements.relatedTags.value = (company?.relatedTags || []).join('，');
+  form.elements.classificationBasis.value = company?.classificationBasis || '';
   form.elements.sources.value = (company?.sources || []).map((source) => `${source.label} | ${source.url}`).join('\n');
   renderEditorQrList();
   openModal('editorModal');
@@ -607,6 +611,7 @@ function bindEvents() {
     const deleteButton = event.target.closest('[data-detail-delete]');
     if (editButton) openCompanyEditor(state.companies.find((company) => company.id === editButton.dataset.detailEdit));
     if (deleteButton) requestDeleteCompany(deleteButton.dataset.detailDelete);
+    if (event.target.closest('[data-open-login]')) { closeModal('detailModal'); $('loginError').hidden = true; openModal('loginModal'); }
   });
 
   $('newCompanyBtn').addEventListener('click', () => openCompanyEditor());
@@ -666,7 +671,9 @@ function bindForms() {
         website: values.website,
         positioning: values.positioning,
         notes: values.notes,
+        relatedCategories: String(values.relatedCategories || '').split(/[，,、]/).map((item) => item.trim()).filter(Boolean),
         relatedTags: String(values.relatedTags || '').split(/[，,、]/).map((item) => item.trim()).filter(Boolean),
+        classificationBasis: values.classificationBasis,
         qrImages: state.editorImages,
         sources: values.sources,
         verifiedAt: existing?.verifiedAt || (values.sources ? new Date().toISOString().slice(0, 10) : null),
@@ -903,6 +910,19 @@ async function init() {
 }
 
 init();
+
+function publicFollowupSection(company) {
+  return `
+    <section class="detail-section followup-section">
+      <div class="followup-title"><h3>跟进动态</h3><span>当前阶段</span></div>
+      <div class="public-followup-card">
+        ${followupBadge(company.followUpStatus || '未接触')}
+        <p>管理员登录后可查看历史动态，并记录负责人、当前进展和下一步计划。</p>
+        <button class="button button-ghost button-small" type="button" data-open-login>管理员登录</button>
+      </div>
+    </section>
+  `;
+}
 
 function followupStageOptions(selected) {
   return FOLLOWUP_STAGES.map((stage) => `<option value="${stage}" ${stage === selected ? 'selected' : ''}>${stage}</option>`).join('');
