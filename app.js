@@ -76,6 +76,44 @@ function shortPhone(value) {
   return first.length > 28 ? `${first.slice(0, 28)}…` : first;
 }
 
+function base64ToBlob(base64, mimeType) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType || 'image/jpeg' });
+}
+
+async function mapLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  async function run() {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      results[index] = await worker(items[index], index);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+  return results;
+}
+
+async function uploadParsedQrImages(companies) {
+  const tasks = [];
+  for (const company of companies) {
+    const images = Array.isArray(company.qrImages) ? company.qrImages : [];
+    company.qrImages = [];
+    for (const image of images) {
+      if (image && image.base64) tasks.push({ company, image });
+    }
+  }
+  const uploaded = await mapLimit(tasks, 4, async (task) => {
+    const formData = new FormData();
+    formData.append('file', base64ToBlob(task.image.base64, task.image.mimeType), task.image.fileName || 'qr.jpg');
+    const result = await api('/api/uploads', { method: 'POST', body: formData });
+    return { company: task.company, url: result.url };
+  });
+  for (const item of uploaded) item.company.qrImages.push(item.url);
+}
+
 async function api(url, options = {}) {
   const token = localStorage.getItem(TOKEN_KEY) || '';
   const response = await fetch(API_BASE + url, {
@@ -687,9 +725,12 @@ function bindImport() {
         body: file,
       });
       if (!upload.ok) throw new Error('表格上传失败（' + upload.status + '）。');
-      preview = await api('/api/import/preview', {
+      if (!window.ImportParser) throw new Error('表格解析器未加载，请刷新页面后重试。');
+      const parsed = await window.ImportParser.parseFile(file);
+      await uploadParsedQrImages(parsed.companies);
+      preview = await api('/api/import/client-preview', {
         method: 'POST',
-        body: JSON.stringify({ bucket: signed.bucket, path: signed.path, originalName: file.name, size: file.size, mimeType: file.type }),
+        body: JSON.stringify({ bucket: signed.bucket, path: signed.path, originalName: file.name, size: file.size, mimeType: file.type, parsed }),
       });
       const rows = preview.companies.map((row) => ({ sourceRow: row.sourceRow, include: row.include !== false, category: row.category }));
       if (!rows.some((row) => row.include)) throw new Error('表格中没有可导入的新公司。');
