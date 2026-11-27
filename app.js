@@ -1008,7 +1008,8 @@ function renderFollowupTabs() {
 
 function followupAdminOptions() {
   const admins = state.admins.length ? state.admins : (state.admin ? [{ username: state.admin.username }] : []);
-  const selected = state.admin?.username || admins[0]?.username || '';
-  if (!admins.length) return '<option value="">暂无管理员</option>';
-  return admins.map((admin) => `<option value="${escapeHtml(admin.username)}" ${admin.username === selected ? 'selected' : ''}>${escapeHtml(admin.username)}</option>`).join('');
+  const options = ['<option value="" selected disabled>请选择负责人</option>'];
+  if (!admins.length) return options.join('');
+  for (const admin of admins) options.push('<option value="' + escapeHtml(admin.username) + '">' + escapeHtml(admin.username) + '</option>');
+  return options.join('');
 }
