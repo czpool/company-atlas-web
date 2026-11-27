@@ -528,6 +528,17 @@ function bindEvents() {
     } finally { setButtonLoading(button, false); }
   });
 
+  $('searchInput').addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    renderCompanies();
+    window.requestAnimationFrame(() => {
+      const firstResult = document.querySelector('#companyGrid .company-card');
+      const target = firstResult || $('emptyState') || $('directory');
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
   $('searchInput').addEventListener('input', (event) => {
     state.query = event.target.value;
     if (state.query.trim()) {
