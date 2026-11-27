@@ -50,8 +50,14 @@ function escapeHtml(value) {
 }
 
 function safeUrl(value) {
-  const url = String(value || '').trim();
+  let url = String(value || '').trim();
+  if (/^http:\/\/[^/]*supabase\.co/i.test(url)) url = url.replace(/^http:/i, 'https:');
+  if (url.startsWith('/files/')) url = API_BASE + url;
   return /^(https?:\/\/|\/uploads\/|\/history\/)/i.test(url) ? url : '';
+}
+
+function searchKey(value) {
+  return String(value || '').toLowerCase().replace(/[\s\u3000（）()【】\[\]·,，.。:：;；\-_/\\]/g, '');
 }
 
 function formatDate(value, includeTime = false) {
@@ -223,12 +229,12 @@ function renderCategoryTabs() {
 }
 
 function getVisibleCompanies() {
-  const query = state.query.trim().toLowerCase();
+  const query = searchKey(state.query.trim());
   let rows = state.companies.filter((company) => {
     if (state.category !== '全部' && company.category !== state.category) return false;
     if (state.followupFilter !== '全部' && (company.followUpStatus || '未接触') !== state.followupFilter) return false;
     if (!query) return true;
-    const haystack = [company.name, company.contact, company.phone, company.positioning, company.notes, company.website, company.category, ...(company.relatedTags || [])].join(' ').toLowerCase();
+    const haystack = searchKey([company.name, company.contact, company.phone, company.positioning, company.notes, company.website, company.category, ...(company.relatedTags || [])].join(' '));
     return haystack.includes(query);
   });
   if (state.sort === 'name') rows = [...rows].sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
@@ -522,7 +528,16 @@ function bindEvents() {
     } finally { setButtonLoading(button, false); }
   });
 
-  $('searchInput').addEventListener('input', (event) => { state.query = event.target.value; renderCompanies(); });
+  $('searchInput').addEventListener('input', (event) => {
+    state.query = event.target.value;
+    if (state.query.trim()) {
+      state.category = '全部';
+      state.followupFilter = '全部';
+      renderCategoryTabs();
+      renderFollowupTabs();
+    }
+    renderCompanies();
+  });
   $('sortSelect').addEventListener('change', (event) => { state.sort = event.target.value; renderCompanies(); });
   $('clearFilterBtn').addEventListener('click', resetFilters);
   $('emptyResetBtn').addEventListener('click', resetFilters);
