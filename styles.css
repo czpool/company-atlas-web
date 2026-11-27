@@ -18,6 +18,10 @@
   --gold-ink: #7e713e;
   --violet: #e7dff0;
   --violet-ink: #6d5b84;
+  --teal: #dceceb;
+  --teal-ink: #4b7674;
+  --rose: #f0dedf;
+  --rose-ink: #8f5d68;
   --danger: #9c4f46;
   --shadow: 0 20px 60px rgba(58, 58, 48, .09);
   --shadow-soft: 0 10px 30px rgba(58, 58, 48, .06);
@@ -172,6 +176,8 @@ svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-widt
 .category-blue { --category-soft: var(--blue); --category-ink: var(--blue-ink); }
 .category-gold { --category-soft: var(--gold); --category-ink: var(--gold-ink); }
 .category-violet { --category-soft: var(--violet); --category-ink: var(--violet-ink); }
+.category-teal { --category-soft: var(--teal); --category-ink: var(--teal-ink); }
+.category-rose { --category-soft: var(--rose); --category-ink: var(--rose-ink); }
 
 .section-directory { padding-top: 80px; }
 .directory-heading { margin-bottom: 24px; }
@@ -200,6 +206,8 @@ svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-widt
 .company-card.category-blue { --card-soft: var(--blue); --card-ink: var(--blue-ink); }
 .company-card.category-gold { --card-soft: var(--gold); --card-ink: var(--gold-ink); }
 .company-card.category-violet { --card-soft: var(--violet); --card-ink: var(--violet-ink); }
+.company-card.category-teal { --card-soft: var(--teal); --card-ink: var(--teal-ink); }
+.company-card.category-rose { --card-soft: var(--rose); --card-ink: var(--rose-ink); }
 .company-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
 .company-index { color: var(--muted); font: 10px/1 var(--mono); letter-spacing: .11em; }
 .category-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: var(--card-soft); color: var(--card-ink); font-size: 10px; font-weight: 650; }
@@ -289,6 +297,8 @@ svg { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-widt
 .detail-blue { --detail-soft: var(--blue); --detail-ink: var(--blue-ink); }
 .detail-gold { --detail-soft: var(--gold); --detail-ink: var(--gold-ink); }
 .detail-violet { --detail-soft: var(--violet); --detail-ink: var(--violet-ink); }
+.detail-teal { --detail-soft: var(--teal); --detail-ink: var(--teal-ink); }
+.detail-rose { --detail-soft: var(--rose); --detail-ink: var(--rose-ink); }
 
 .editor-card { width: min(840px, 100%); }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
