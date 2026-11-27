@@ -671,7 +671,7 @@ function bindImport() {
     event.preventDefault();
     const file = fileInput.files?.[0];
     if (!file) return showToast('请先选择企业表格。', 'error');
-    if (file.size > 100 * 1024 * 1024) return showToast('表格不能超过 100MB。', 'error');
+    if (file.size > 50 * 1024 * 1024) return showToast('表格不能超过 100MB。', 'error');
     const button = event.submitter;
     setButtonLoading(button, true, '正在自动识别并更新网站…');
     resetImportPreview();
